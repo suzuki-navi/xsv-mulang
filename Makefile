@@ -1,6 +1,6 @@
 
 build: var/makefile
-	bash src/main.sh
+	./etc/mulang-last
 	cp var/out.sh mulang
 
 FORCE:

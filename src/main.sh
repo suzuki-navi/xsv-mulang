@@ -7,9 +7,9 @@ set -Ceu
 
 : "${MULANG_SOURCE_PARENT_DIR_NAME:=.xsvutils/mulang}"
 
-: "${MULANG_SOURCE_DIR:=src}"
-# MULANG_SOURCE_DIR はmulang自身がmulangでビルドされたら boot.sh で定義されるディレクトリになる
-# src というデフォルト値はブートストラッピングの一番最初のビルドのための値
+: "$MULANG_SOURCE_DIR"
+# MULANG_SOURCE_DIR はmulangでビルド時に定義される。
+# 未定義の場合にエラーとする。
 
 mkdir -p var/target
 
