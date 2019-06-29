@@ -37,12 +37,17 @@ EOF
 done
 
 cat <<EOF
+var/target/.anylang: var/target/.dir
+	curl -fsS https://raw.githubusercontent.com/xsvutils/xsv-anylang/master/anylang.sh > var/target/.anylang.tmp
+	chmod +x var/target/.anylang.tmp
+	mv var/target/.anylang.tmp var/target/.anylang
+
 var/target/.dir:
 	mkdir -p var/target
 	touch var/target/.dir
 
-var/TARGET_VERSION_HASH: $target_sources2
-	cat $target_sources2 | shasum | cut -b1-40 > var/TARGET_VERSION_HASH.tmp
+var/TARGET_VERSION_HASH: $target_sources2 var/target/.anylang
+	cat $target_sources2 var/target/.anylang | shasum | cut -b1-40 > var/TARGET_VERSION_HASH.tmp
 	mv var/TARGET_VERSION_HASH.tmp var/TARGET_VERSION_HASH
 
 EOF
