@@ -7,9 +7,11 @@ test: FORCE mulang
 	diff -u test/1/etc/expected.txt test/1/var/result.txt
 	echo OK
 
-mulang: var/makefile
-	./etc/mulang-last
+mulang: var/out.sh
 	cp var/out.sh mulang
+
+var/out.sh: FORCE
+	./etc/mulang-last
 
 FORCE:
 
