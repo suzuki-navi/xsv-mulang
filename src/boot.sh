@@ -14,7 +14,7 @@ if [ ! -e $MULANG_SOURCE_DIR ]; then
     mkdir $MULANG_SOURCE_DIR.tmp 2>/dev/null
     cat $0 | (
         cd $MULANG_SOURCE_DIR.tmp || exit $?
-        perl -ne 'print $_ if $f; $f=1 if /^#SOURCE_IMAGE$/' | tar xzf - 2>/dev/null
+        perl -ne 'print $_ if $f; $f=1 if /^#SOURCE_IMAGE$/' | gzip -n -d -c | bash 2>/dev/null
     )
     mkdir $MULANG_SOURCE_DIR 2>/dev/null && mv $MULANG_SOURCE_DIR.tmp/* $MULANG_SOURCE_DIR/ && rm -rf $MULANG_SOURCE_DIR.tmp
 fi
