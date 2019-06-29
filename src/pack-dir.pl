@@ -24,7 +24,7 @@ sub is_binary {
         }
 
         if ($l == 0) {
-            if ($buf2 !~ /\n\z/) {
+            if (defined($buf2) && $buf2 !~ /\n\z/) {
                 $is_binary = 1;
             }
             last;
@@ -41,6 +41,12 @@ sub is_binary {
     close($fh);
 
     $is_binary;
+}
+
+sub pack_file_zero {
+    my ($file) = @_;
+
+    print "touch " . escape_bash($file) . "\n";
 }
 
 sub pack_file_text {
@@ -88,8 +94,16 @@ sub pack_file_binary {
 sub pack_directory {
     my ($dir) = @_;
 
+    if ($dir ne ".") {
+        print "################################################################################\n";
+        print "# $dir\n";
+        print "################################################################################\n";
+    }
+
     if (-f $dir) {
-        if (is_binary($dir)) {
+        if (-z $dir) {
+            pack_file_zero($dir);
+        } elsif (is_binary($dir)) {
             pack_file_binary($dir);
         } else {
             pack_file_text($dir);
@@ -97,6 +111,7 @@ sub pack_directory {
         if (-x $dir) {
             print "chmod +x " . escape_bash($dir) . "\n";
         }
+        print "\n";
     } elsif (-d $dir) {
         if ($dir ne ".") {
             print "mkdir " . escape_bash($dir) . "\n";
@@ -112,17 +127,13 @@ sub pack_directory {
 
         @files = sort(@files);
         foreach my $f (@files) {
-            pack_directory($f);
+            pack_directory("$dir/$f");
         }
+    } else {
+        print "# unknown file type: $dir\n";
+        print "\n";
     }
 }
-
-#my $is_binary = is_binary($src);
-#if ($is_binary) {
-#    print "Binary\n";
-#} else {
-#    print "Text\n";
-#}
 
 pack_directory(".");
 
