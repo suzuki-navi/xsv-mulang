@@ -4,39 +4,51 @@ use utf8;
 
 my $name = $ARGV[0];
 
-my $type;
+my $type1;
+my $type2;
 my $sources;
 my $jdk_version;
 my $sbt_version;
+my $graalvm_version;
 open(my $fh, '<', "src/$name.mulang.conf") or die $!;
 while (my $line = <$fh>) {
     if ($line =~ /^\s*sbt-package\s*$/) {
-        $type = "sbt-package";
+        $type1 = "sbt-package";
+        $type2 = "sbt-package";
     } elsif ($line =~ /^\s*sbt-fatjar\s*$/) {
-        $type = "sbt-fatjar";
+        $type1 = "sbt-fatjar";
+        $type2 = "sbt-fatjar";
+    } elsif ($line =~ /^\s*sbt-nativeimage\s*$/) {
+        $type1 = "sbt-fatjar";
+        $type2 = "sbt-nativeimage";
     } elsif ($line =~ /^\s*sources\s*:\s*(.+)\s*$/) {
         $sources = $1;
     } elsif ($line =~ /^\s*jdk-version\s*:\s*(.+)\s*$/) {
         $jdk_version = $1;
     } elsif ($line =~ /^\s*sbt-version\s*:\s*(.+)\s*$/) {
         $sbt_version = $1;
+    } elsif ($line =~ /^\s*graalvm-version\s*:\s*(.+)\s*$/) {
+        $graalvm_version = $1;
     }
 }
 close($fh);
 
-if (!defined($type)) {
+if (!defined($type1)) {
     die "src/$name.mulang.conf: type not found";
 }
 
 
 
-if ($type eq "sbt-package" || $type eq "sbt-fatjar") {
+if ($type1 eq "sbt-package" || $type1 eq "sbt-fatjar") {
 
     if (!defined($jdk_version)) {
         die "src/$name.mulang.conf: jkd-version not found";
     }
     if (!defined($sbt_version)) {
         die "src/$name.mulang.conf: sbt-version not found";
+    }
+    if ($type2 eq "sbt-nativeimage" && !defined($graalvm_version)) {
+        die "src/$name.mulang.conf: graalvm-version not found";
     }
 
     my @scalaSources = ();
@@ -63,7 +75,7 @@ if ($type eq "sbt-package" || $type eq "sbt-fatjar") {
         $scalaSources2 .= " var/build-$name/sbt/src/main/java/$s";
     }
 
-    if ($type eq "sbt-package") {
+    if ($type1 eq "sbt-package") {
         print <<EOS;
 var/target/$name: var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
 	rm -rf var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT 2>/dev/null
@@ -80,10 +92,17 @@ var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip: var/build-$name/s
 	cd var/build-$name/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt universal:packageBin
 
 EOS
-    } elsif ($type eq "sbt-fatjar") {
-        print <<EOS;
-var/target/$name: var/build-$name/sbt/build.sbt var/build-$name/sbt/project/plugins.sbt $scalaSources2 var/target/.anylang
-	cd var/build-$name/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt assembly
+    } elsif ($type1 eq "sbt-fatjar") {
+        if ($type2 eq "sbt-nativeimage") {
+            print <<EOS;
+var/target/$name: var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
+	cd var/build-$name; $ENV{MULANG_SOURCE_DIR}/.anylang --graalvm=$graalvm_version native-image -jar sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar --verbose
+	mv var/build-$name/$name-assembly-0.1.0-SNAPSHOT var/target/$name
+
+EOS
+        } else {
+            print <<EOS;
+var/target/$name: var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
 	mkdir -p var/target/.$name-bin
 	mv var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar var/target/.$name-bin/$name.jar
 	echo '#!/bin/bash' > var/target/$name.tmp
@@ -91,6 +110,12 @@ var/target/$name: var/build-$name/sbt/build.sbt var/build-$name/sbt/project/plug
 	chmod +x var/target/$name.tmp
 	mv var/target/$name.tmp var/target/$name
 
+EOS
+        }
+
+        print <<EOS;
+var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar: var/build-$name/sbt/build.sbt var/build-$name/sbt/project/plugins.sbt $scalaSources2 var/target/.anylang
+	cd var/build-$name/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt assembly
 
 EOS
     } else {
@@ -100,11 +125,11 @@ EOS
     print <<EOS;
 var/build-$name/sbt/build.sbt:
 	mkdir -p var/build-$name/sbt
-	perl $ENV{MULANG_SOURCE_DIR}/build-$type-build.pl $name > var/build-$name/sbt/build.sbt
+	perl $ENV{MULANG_SOURCE_DIR}/build-$type1-build.pl $name > var/build-$name/sbt/build.sbt
 
 var/build-$name/sbt/project/plugins.sbt:
 	mkdir -p var/build-$name/sbt/project
-	perl $ENV{MULANG_SOURCE_DIR}/build-$type-plugins.pl $name > var/build-$name/sbt/project/plugins.sbt
+	perl $ENV{MULANG_SOURCE_DIR}/build-$type1-plugins.pl $name > var/build-$name/sbt/project/plugins.sbt
 
 EOS
 
