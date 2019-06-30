@@ -11,6 +11,11 @@ set -Ceu
 # MULANG_SOURCE_DIR はmulangでビルド時に定義される。
 # 未定義の場合にエラーとする。
 
+if [ ! -e var ]; then
+    mkdir var
+    echo "*" > var/.gitignore
+fi
+
 mkdir -p var/target
 
 target_sources_1=$(cd src; ls)
