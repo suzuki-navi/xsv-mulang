@@ -70,6 +70,17 @@ if ($type1 eq "sbt-package" || $type1 eq "sbt-fatjar") {
     }
     closedir($dh);
 
+    # var/target にある不要なファイルを削除
+    # ソースコードが減った場合、リネームされた場合に備えた処理
+    my $rm_targets = ".dir " . join(" ", @scalaSources);
+    my $rm_targets_flag = "";
+    if ( -d "var/build-$name/sbt/src/main/java" ) {
+        system("cd var/build-$name/sbt/src/main/java; bash $ENV{MULANG_SOURCE_DIR}/rm-targets.sh $rm_targets");
+        if ($? != 0) {
+            $rm_targets_flag = "FORCE";
+        }
+    }
+
     my $scalaSources2 = "";
     foreach my $s (@scalaSources) {
         $scalaSources2 .= " var/build-$name/sbt/src/main/java/$s";
@@ -87,7 +98,7 @@ var/target/$name: var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
 	chmod +x var/target/$name.tmp
 	mv var/target/$name.tmp var/target/$name
 
-var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip: var/build-$name/sbt/build.sbt var/build-$name/sbt/project/plugins.sbt $scalaSources2 var/target/.anylang
+var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip: var/build-$name/sbt/build.sbt var/build-$name/sbt/project/plugins.sbt $scalaSources2 var/target/.anylang $rm_targets_flag
 	#cd var/build-$name/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt compile
 	cd var/build-$name/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt universal:packageBin
 
@@ -114,7 +125,7 @@ EOS
         }
 
         print <<EOS;
-var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar: var/build-$name/sbt/build.sbt var/build-$name/sbt/project/plugins.sbt $scalaSources2 var/target/.anylang
+var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar: var/build-$name/sbt/build.sbt var/build-$name/sbt/project/plugins.sbt $scalaSources2 var/target/.anylang $rm_targets_flag
 	cd var/build-$name/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt assembly
 
 EOS
@@ -134,15 +145,15 @@ var/build-$name/sbt/project/plugins.sbt:
 EOS
 
     print <<EOS;
-var/build-$name/sbt/src/main/java/.empty:
+var/build-$name/sbt/src/main/java/.dir:
 	mkdir -p var/build-$name/sbt/src/main/java
-	touch var/build-$name/sbt/src/main/java/.empty
+	touch var/build-$name/sbt/src/main/java/.dir
 
 EOS
 
     foreach my $s (@scalaSources) {
         print <<EOS;
-var/build-$name/sbt/src/main/java/$s: src/$s var/build-$name/sbt/src/main/java/.empty
+var/build-$name/sbt/src/main/java/$s: src/$s var/build-$name/sbt/src/main/java/.dir
 	cp src/$s var/build-$name/sbt/src/main/java/$s
 
 EOS

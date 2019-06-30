@@ -38,6 +38,8 @@ var/out.sh: var/TARGET_VERSION_HASH
 	chmod 755 var/out.sh.tmp
 	mv var/out.sh.tmp var/out.sh
 
+FORCE:
+
 EOF
 
     for f in $target_sources_1; do
@@ -52,6 +54,17 @@ for f in $target_bin_1;do
     perl $MULANG_SOURCE_DIR/build-bin-make.pl $f
 done
 
+    # var/target にある不要なファイルを削除
+    # ソースコードが減った場合、リネームされた場合に備えた処理
+    rm_targets=$(echo $(echo .anylang; echo .dir; for f in $target_sources_1; do echo $f; done; for f in $target_bin_1; do echo $f; echo ".$f-bin"; done))
+    cd var/target
+    if bash $MULANG_SOURCE_DIR/rm-targets.sh $rm_targets; then
+        rm_targets_flag=
+    else
+        rm_targets_flag=FORCE
+    fi
+    cd ../..
+
     cat <<EOF
 var/target/.anylang: var/target/.dir
 	curl -fsS https://raw.githubusercontent.com/xsvutils/xsv-anylang/master/anylang.sh > var/target/.anylang.tmp
@@ -62,7 +75,7 @@ var/target/.dir:
 	mkdir -p var/target
 	touch var/target/.dir
 
-var/TARGET_VERSION_HASH: $target_sources_2 $target_bin_2 var/target/.anylang
+var/TARGET_VERSION_HASH: $target_sources_2 $target_bin_2 var/target/.anylang $rm_targets_flag
 	cat \$\$(find var/target -type f | LC_ALL=C sort) | shasum | cut -b1-40 > var/TARGET_VERSION_HASH.tmp
 	mv var/TARGET_VERSION_HASH.tmp var/TARGET_VERSION_HASH
 
@@ -70,23 +83,6 @@ EOF
 
 ) >| var/makefile.tmp
 mv var/makefile.tmp var/makefile
-
-########################################
-# var/target にある不要なファイルを削除
-# ソースコードが減った場合、リネームされた場合に備えた処理
-########################################
-
-RM_TARGET=$(diff -u \
-            <( (echo .; echo ..; echo .anylang; echo .dir; for f in $target_sources_1; do echo $f; done; for f in $target_bin_1; do echo $f; echo ".$f-bin"; done;) | LC_ALL=C sort ) \
-            <( cd var/target; ls -a | LC_ALL=C sort ) |
-                tail -n+3 | grep '^\+' | cut -b2-)
-
-if [ -n "$RM_TARGET" ]; then
-    for f in $RM_TARGET; do
-        echo rm -r var/target/$f >&2
-        rm -r var/target/$f >&2
-    done
-fi
 
 ########################################
 # make を実行
