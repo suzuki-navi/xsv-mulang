@@ -19,9 +19,13 @@ target_sources_2=$(echo $(for f in $target_sources_1; do echo $f; done | sed 's#
 target_bin_1=$(cd src; ls *.mulang.conf 2>/dev/null | sed 's/\.mulang\.conf$//g')
 target_bin_2=$(echo $(for f in $target_bin_1; do echo $f; done | sed 's#^#var/target/#g'))
 
+########################################
+# makefileを作成
+########################################
+
 (
 
-cat <<EOF
+    cat <<EOF
 var/out.sh: var/TARGET_VERSION_HASH
 	cat $MULANG_SOURCE_DIR/boot.sh | sed "s/XXXX_VERSION_HASH_XXXX/\$\$(cat var/TARGET_VERSION_HASH)/g" | sed "s#XXXX_MULANG_SOURCE_DIR_XXXX#$MULANG_SOURCE_PARENT_DIR_NAME#g" > var/out.sh.tmp
 	(cd var/target; perl $MULANG_SOURCE_DIR/pack-dir.pl) > var/image.sh
@@ -31,19 +35,19 @@ var/out.sh: var/TARGET_VERSION_HASH
 
 EOF
 
-for f in $target_sources_1; do
-    cat <<EOF
+    for f in $target_sources_1; do
+        cat <<EOF
 var/target/$f: src/$f var/target/.dir
 	cp src/$f var/target/$f
 
 EOF
-done
+    done
 
 for f in $target_bin_1;do
     perl $MULANG_SOURCE_DIR/build-bin-make.pl $f
 done
 
-cat <<EOF
+    cat <<EOF
 var/target/.anylang: var/target/.dir
 	curl -fsS https://raw.githubusercontent.com/xsvutils/xsv-anylang/master/anylang.sh > var/target/.anylang.tmp
 	chmod +x var/target/.anylang.tmp
@@ -62,6 +66,11 @@ EOF
 ) >| var/makefile.tmp
 mv var/makefile.tmp var/makefile
 
+########################################
+# var/target にある不要なファイルを削除
+# ソースコードが減った場合、リネームされた場合に備えた処理
+########################################
+
 RM_TARGET=$(diff -u \
             <( (echo .; echo ..; echo .anylang; echo .dir; for f in $target_sources_1; do echo $f; done; for f in $target_bin_1; do echo $f; echo ".$f-bin"; done;) | LC_ALL=C sort ) \
             <( cd var/target; ls -a | LC_ALL=C sort ) |
@@ -74,7 +83,13 @@ if [ -n "$RM_TARGET" ]; then
     done
 fi
 
+########################################
+# make を実行
+########################################
+
 make -f var/makefile "$@"
 
 exit $?
+
+########################################
 
