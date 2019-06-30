@@ -10,8 +10,8 @@ my $jdk_version;
 my $sbt_version;
 open(my $fh, '<', "src/$name.mulang.conf") or die $!;
 while (my $line = <$fh>) {
-    if ($line =~ /^\s*sbt1\s*$/) {
-        $type = "sbt1";
+    if ($line =~ /^\s*sbt-package\s*$/) {
+        $type = "sbt-package";
     } elsif ($line =~ /^\s*sources\s*:\s*(.+)\s*$/) {
         $sources = $1;
     } elsif ($line =~ /^\s*jdk-version\s*:\s*(.+)\s*$/) {
@@ -28,7 +28,7 @@ if (!defined($type)) {
 
 
 
-if ($type eq "sbt1") {
+if ($type eq "sbt-package") {
 
     if (!defined($jdk_version)) {
         die "src/$name.mulang.conf: jkd-version not found";
@@ -78,11 +78,11 @@ var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip: var/build-$name/s
 
 var/build-$name/sbt/build.sbt:
 	mkdir -p var/build-$name/sbt
-	perl $ENV{MULANG_SOURCE_DIR}/build-sbt1-build.pl $name > var/build-$name/sbt/build.sbt
+	perl $ENV{MULANG_SOURCE_DIR}/build-sbt-package-build.pl $name > var/build-$name/sbt/build.sbt
 
 var/build-$name/sbt/project/plugins.sbt:
 	mkdir -p var/build-$name/sbt/project
-	perl $ENV{MULANG_SOURCE_DIR}/build-sbt1-plugins.pl $name > var/build-$name/sbt/project/plugins.sbt
+	perl $ENV{MULANG_SOURCE_DIR}/build-sbt-package-plugins.pl $name > var/build-$name/sbt/project/plugins.sbt
 
 var/build-$name/sbt/src/main/java/.empty:
 	mkdir -p var/build-$name/sbt/src/main/java
