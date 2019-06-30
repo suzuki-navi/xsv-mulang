@@ -1,5 +1,5 @@
 
-// mulang-name: test1
+// mulang-bin-name: test1
 
 object Test1 {
 

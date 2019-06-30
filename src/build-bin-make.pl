@@ -9,8 +9,8 @@ my $jdk_version;
 my $sbt_version;
 open(my $fh, '<', "src/$name.mulang.conf") or die $!;
 while (my $line = <$fh>) {
-    if ($line =~ /^sbt\s*$/) {
-        $type = "sbt";
+    if ($line =~ /^sbt1\s*$/) {
+        $type = "sbt1";
     } elsif ($line =~ /^jdk-version\s*:\s*(.+)\s*$/) {
         $jdk_version = $1;
     } elsif ($line =~ /^sbt-version\s*:\s*(.+)\s*$/) {
@@ -22,16 +22,17 @@ close($fh);
 if (!defined($type)) {
     die "src/$name.mulang.conf: type not found";
 }
-if (!defined($jdk_version)) {
-    die "src/$name.mulang.conf: jkd-version not found";
-}
-if (!defined($sbt_version)) {
-    die "src/$name.mulang.conf: sbt-version not found";
-}
 
 
 
-if ($type eq "sbt") {
+if ($type eq "sbt1") {
+
+    if (!defined($jdk_version)) {
+        die "src/$name.mulang.conf: jkd-version not found";
+    }
+    if (!defined($sbt_version)) {
+        die "src/$name.mulang.conf: sbt-version not found";
+    }
 
     my @scalaSources = ();
     opendir(my $dh, "src") or die $!;
@@ -40,7 +41,7 @@ if ($type eq "sbt") {
 
         open(my $fh, '<', "src/$file") or die $!;
         while (my $line = <$fh>) {
-            if ($line =~ /^\/\/\s*mulang-name\s*:\s*(.+)$/) {
+            if ($line =~ /^\/\/\s*mulang-bin-name\s*:\s*(.+)$/) {
                 my $confName = $1;
                 if ($confName eq $name) {
                     push(@scalaSources, $file);
@@ -74,11 +75,11 @@ var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip: var/build-$name/s
 
 var/build-$name/sbt/build.sbt:
 	mkdir -p var/build-$name/sbt
-	perl $ENV{MULANG_SOURCE_DIR}/build-sbt-build.pl $name > var/build-$name/sbt/build.sbt
+	perl $ENV{MULANG_SOURCE_DIR}/build-sbt1-build.pl $name > var/build-$name/sbt/build.sbt
 
 var/build-$name/sbt/project/plugins.sbt:
 	mkdir -p var/build-$name/sbt/project
-	perl $ENV{MULANG_SOURCE_DIR}/build-sbt-plugins.pl $name > var/build-$name/sbt/project/plugins.sbt
+	perl $ENV{MULANG_SOURCE_DIR}/build-sbt1-plugins.pl $name > var/build-$name/sbt/project/plugins.sbt
 
 var/build-$name/sbt/src/main/java/.empty:
 	mkdir -p var/build-$name/sbt/src/main/java
