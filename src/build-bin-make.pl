@@ -5,15 +5,18 @@ use utf8;
 my $name = $ARGV[0];
 
 my $type;
+my $sources;
 my $jdk_version;
 my $sbt_version;
 open(my $fh, '<', "src/$name.mulang.conf") or die $!;
 while (my $line = <$fh>) {
-    if ($line =~ /^sbt1\s*$/) {
+    if ($line =~ /^\s*sbt1\s*$/) {
         $type = "sbt1";
-    } elsif ($line =~ /^jdk-version\s*:\s*(.+)\s*$/) {
+    } elsif ($line =~ /^\s*sources\s*:\s*(.+)\s*$/) {
+        $sources = $1;
+    } elsif ($line =~ /^\s*jdk-version\s*:\s*(.+)\s*$/) {
         $jdk_version = $1;
-    } elsif ($line =~ /^sbt-version\s*:\s*(.+)\s*$/) {
+    } elsif ($line =~ /^\s*sbt-version\s*:\s*(.+)\s*$/) {
         $sbt_version = $1;
     }
 }
@@ -41,9 +44,9 @@ if ($type eq "sbt1") {
 
         open(my $fh, '<', "src/$file") or die $!;
         while (my $line = <$fh>) {
-            if ($line =~ /^\/\/\s*mulang-bin-name\s*:\s*(.+)$/) {
-                my $confName = $1;
-                if ($confName eq $name) {
+            if ($line =~ /^\s*\/\/\s*mulang-bin-sources\s*:\s*(.+)\s*$/) {
+                my $target = $1;
+                if ($target eq $sources) {
                     push(@scalaSources, $file);
                 }
                 last;

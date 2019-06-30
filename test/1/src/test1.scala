@@ -1,5 +1,5 @@
 
-// mulang-bin-name: test1
+// mulang-bin-sources: scalatest
 
 object Test1 {
 

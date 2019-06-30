@@ -7,7 +7,7 @@ my $name = $ARGV[0];
 my $scalaVersion;
 open(my $fh, '<', "src/$name.mulang.conf") or die $!;
 while (my $line = <$fh>) {
-    if ($line =~ /^scala-version\s*:\s*(.+)\s*$/) {
+    if ($line =~ /^\s*scala-version\s*:\s*(.+)\s*$/) {
         $scalaVersion = $1;
     }
 }
