@@ -62,6 +62,18 @@ EOF
 ) >| var/makefile.tmp
 mv var/makefile.tmp var/makefile
 
+RM_TARGET=$(diff -u \
+            <( (echo .; echo ..; echo .anylang; echo .dir; for f in $target_sources_1; do echo $f; done; for f in $target_bin_1; do echo $f; echo ".$f-bin"; done;) | LC_ALL=C sort ) \
+            <( cd var/target; ls -a | LC_ALL=C sort ) |
+                tail -n+3 | grep '^\+' | cut -b2-)
+
+if [ -n "$RM_TARGET" ]; then
+    for f in $RM_TARGET; do
+        echo rm -r var/target/$f >&2
+        rm -r var/target/$f >&2
+    done
+fi
+
 make -f var/makefile "$@"
 
 exit $?
