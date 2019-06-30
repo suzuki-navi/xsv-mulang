@@ -13,8 +13,11 @@ set -Ceu
 
 mkdir -p var/target
 
-target_sources1=$(cd src; ls)
-target_sources2=$(echo $(cd src; ls | sed "s#^#var/target/#g"))
+target_sources_1=$(cd src; ls)
+target_sources_2=$(echo $(for f in $target_sources_1; do echo $f; done | sed 's#^#var/target/#g'))
+
+target_bin_1=$(cd src; ls *.mulang.conf 2>/dev/null | sed 's/\.mulang\.conf$//g')
+target_bin_2=$(echo $(for f in $target_bin_1; do echo $f; done | sed 's#^#var/target/#g'))
 
 (
 
@@ -28,12 +31,16 @@ var/out.sh: var/TARGET_VERSION_HASH
 
 EOF
 
-for f in $target_sources1; do
+for f in $target_sources_1; do
     cat <<EOF
 var/target/$f: src/$f var/target/.dir
 	cp src/$f var/target/$f
 
 EOF
+done
+
+for f in $target_bin_1;do
+    perl $MULANG_SOURCE_DIR/build-bin-make.pl $f
 done
 
 cat <<EOF
@@ -46,8 +53,8 @@ var/target/.dir:
 	mkdir -p var/target
 	touch var/target/.dir
 
-var/TARGET_VERSION_HASH: $target_sources2 var/target/.anylang
-	cat $target_sources2 var/target/.anylang | shasum | cut -b1-40 > var/TARGET_VERSION_HASH.tmp
+var/TARGET_VERSION_HASH: $target_sources_2 $target_bin_2 var/target/.anylang
+	cat \$\$(find var/target -type f | LC_ALL=C sort) | shasum | cut -b1-40 > var/TARGET_VERSION_HASH.tmp
 	mv var/TARGET_VERSION_HASH.tmp var/TARGET_VERSION_HASH
 
 EOF
