@@ -51,6 +51,11 @@ if ($type1 eq "sbt-package" || $type1 eq "sbt-fatjar") {
         die "src/$name.mulang.conf: graalvm-version not found";
     }
 
+    if ($ENV{MULANG_DEVELOPMENT_MODE} eq "1") {
+        $type1 = "sbt-fatjar";
+        $type2 = "sbt-fatjar";
+    }
+
     my @scalaSources = ();
     opendir(my $dh, "src") or die $!;
     while (my $file = readdir($dh)) {
@@ -91,7 +96,7 @@ if ($type1 eq "sbt-package" || $type1 eq "sbt-fatjar") {
 var/target/$name: var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
 	rm -rf var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT 2>/dev/null
 	cd var/build-$name/sbt/target/universal; unzip $name-0.1.0-SNAPSHOT.zip
-	rm -rf var/target/$name-bin
+	rm -rf var/target/.$name-bin
 	mv var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT var/target/.$name-bin
 	echo '#!/bin/bash' > var/target/$name.tmp
 	echo '\$\$MULANG_SOURCE_DIR/.anylang --jdk=$jdk_version \$\$MULANG_SOURCE_DIR/.$name-bin/bin/$name "\$\$@"' >> var/target/$name.tmp
@@ -99,14 +104,15 @@ var/target/$name: var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
 	mv var/target/$name.tmp var/target/$name
 
 var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip: var/build-$name/sbt/build.sbt var/build-$name/sbt/project/plugins.sbt $scalaSources2 var/target/.anylang $rm_targets_flag
-	#cd var/build-$name/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt compile
 	cd var/build-$name/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt universal:packageBin
+	touch var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
 
 EOS
     } elsif ($type1 eq "sbt-fatjar") {
         if ($type2 eq "sbt-nativeimage") {
             print <<EOS;
 var/target/$name: var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
+	rm -rf var/target/.$name-bin
 	cd var/build-$name; $ENV{MULANG_SOURCE_DIR}/.anylang --graalvm=$graalvm_version native-image -jar sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar --verbose
 	mv var/build-$name/$name-assembly-0.1.0-SNAPSHOT var/target/$name
 
@@ -114,6 +120,7 @@ EOS
         } else {
             print <<EOS;
 var/target/$name: var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
+	rm -rf var/target/.$name-bin
 	mkdir -p var/target/.$name-bin
 	cp var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar var/target/.$name-bin/$name.jar
 	echo '#!/bin/bash' > var/target/$name.tmp
@@ -127,6 +134,7 @@ EOS
         print <<EOS;
 var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar: var/build-$name/sbt/build.sbt var/build-$name/sbt/project/plugins.sbt $scalaSources2 var/target/.anylang $rm_targets_flag
 	cd var/build-$name/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt assembly
+	touch var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
 
 EOS
     } else {
@@ -134,11 +142,11 @@ EOS
     }
 
     print <<EOS;
-var/build-$name/sbt/build.sbt:
+var/build-$name/sbt/build.sbt: var/last_mode
 	mkdir -p var/build-$name/sbt
 	perl $ENV{MULANG_SOURCE_DIR}/build-$type1-build.pl $name > var/build-$name/sbt/build.sbt
 
-var/build-$name/sbt/project/plugins.sbt:
+var/build-$name/sbt/project/plugins.sbt: var/last_mode
 	mkdir -p var/build-$name/sbt/project
 	perl $ENV{MULANG_SOURCE_DIR}/build-$type1-plugins.pl $name > var/build-$name/sbt/project/plugins.sbt
 
