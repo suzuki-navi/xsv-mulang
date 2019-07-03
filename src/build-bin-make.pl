@@ -115,7 +115,7 @@ EOS
             print <<EOS;
 var/target/$name: var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
 	mkdir -p var/target/.$name-bin
-	mv var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar var/target/.$name-bin/$name.jar
+	cp var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar var/target/.$name-bin/$name.jar
 	echo '#!/bin/bash' > var/target/$name.tmp
 	echo '\$\$MULANG_SOURCE_DIR/.anylang --jdk=$jdk_version java -jar \$\$MULANG_SOURCE_DIR/.$name-bin/$name.jar "\$\$@"' >> var/target/$name.tmp
 	chmod +x var/target/$name.tmp
