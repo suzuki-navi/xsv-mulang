@@ -20,6 +20,8 @@ if (!defined($scalaVersion)) {
 print <<EOS;
 name := "$name"
 
+version := "0.1.0-SNAPSHOT"
+
 scalaVersion := "$scalaVersion"
 enablePlugins(JavaAppPackaging)
 
