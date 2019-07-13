@@ -60,6 +60,7 @@ if ($type1 eq "sbt-package" || $type1 eq "sbt-fatjar") {
     opendir(my $dh, "src") or die $!;
     while (my $file = readdir($dh)) {
         next unless ($file =~ /\.scala\z/);
+        next if ($file =~ /\A[.#]/);
 
         open(my $fh, '<', "src/$file") or die $!;
         while (my $line = <$fh>) {
