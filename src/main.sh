@@ -61,7 +61,7 @@ target_bin_2=$(echo $(for f in $target_bin_1; do echo $f; done | sed 's#^#var/ta
         pwd=$(pwd)
         cat <<EOF
 var/out.sh: var/TARGET_VERSION_HASH var/last_mode
-	echo "MULANG_SOURCE_DIR=$pwd/var/target bash $pwd/var/target/main.sh \"\$@\"" > var/out.sh.tmp
+	echo "MULANG_SOURCE_DIR=$pwd/var/target bash $pwd/var/target/main.sh \"\\\$\$@\"" > var/out.sh.tmp
 	chmod 755 var/out.sh.tmp
 	mv var/out.sh.tmp var/out.sh
 
