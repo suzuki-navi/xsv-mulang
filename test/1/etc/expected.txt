@@ -1,5 +1,8 @@
 Hello
 Hello
 Hello
+[33mArray[39m([32m"foo"[39m)
 Hello
+[33mArray[39m([32m"bar"[39m)
 Hello
+[33mArray[39m([32m"baz"[39m)

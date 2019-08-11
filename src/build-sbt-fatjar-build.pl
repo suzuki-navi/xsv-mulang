@@ -5,10 +5,13 @@ use utf8;
 my $name = $ARGV[0];
 
 my $scalaVersion;
+my $libraryDependencies = [];
 open(my $fh, '<', "src/$name.mulang.conf") or die $!;
 while (my $line = <$fh>) {
     if ($line =~ /^\s*scala-version\s*:\s*(.+)\s*$/) {
         $scalaVersion = $1;
+    } elsif ($line =~ /^\s*library-dependencies\s*:\s*(.+)\s*$/) {
+        push(@$libraryDependencies, $1);
     }
 }
 close($fh);
@@ -26,9 +29,14 @@ scalaVersion := "$scalaVersion"
 
 resolvers += "Restlet Repository" at "http://maven.restlet.org"
 
-libraryDependencies ++= Seq(
-)
+EOS
 
+for my $lib (@$libraryDependencies) {
+    print "libraryDependencies += $lib\n";
+}
+print "\n";
+
+print <<EOS;
 scalacOptions += "-deprecation"
 
 EOS
