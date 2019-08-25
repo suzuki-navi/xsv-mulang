@@ -20,7 +20,7 @@ while [ "$#" != 0 ]; do
     shift
 done
 
-: "${MULANG_SOURCE_PARENT_DIR_NAME:=.xsvutils/mulang}"
+MULANG_SOURCE_PARENT_DIR_NAME="${MULANG_SOURCE_PARENT_DIR_NAME:-.xsvutils/mulang}"
 
 : "$MULANG_SOURCE_DIR"
 # MULANG_SOURCE_DIR はmulangでビルド時に定義される。
@@ -40,8 +40,20 @@ if [ -e var/last_mode ]; then
     fi
 fi
 
-
 mkdir -p var/target
+
+########################################
+# main.sh をチェック
+########################################
+
+if [ ! -e src/main.sh ]; then
+    echo "not found: src/main.sh" >&2
+    exit 1
+fi
+
+########################################
+# ソースファイルの一覧
+########################################
 
 target_sources_1=$(cd src; ls)
 target_sources_2=$(echo $(for f in $target_sources_1; do echo $f; done | sed 's#^#var/target/#g'))
