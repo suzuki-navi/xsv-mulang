@@ -133,7 +133,7 @@ mv var/makefile.tmp var/makefile
 # make を実行
 ########################################
 
-make -f var/makefile "$@"
+make --question -f var/makefile || make -f var/makefile "$@"
 
 exit $?
 
