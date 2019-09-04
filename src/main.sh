@@ -122,7 +122,7 @@ var/target/.dir:
 
 var/TARGET_VERSION_HASH: $target_sources_2 $target_bin_2 var/target/.anylang $rm_targets_flag
 	(find var/target -type f | LC_ALL=C sort; cat \$\$(find var/target -type f | LC_ALL=C sort)) | shasum | cut -b1-40 > \$@.tmp
-	if [ ! -e \$@ ] || ! cmp -s \$@.tmp \$@; then mv \$@.tmp \$@
+	if [ ! -e \$@ ] || ! cmp -s \$@.tmp \$@; then mv \$@.tmp \$@; fi
 
 EOF
 

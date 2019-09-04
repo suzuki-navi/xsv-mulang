@@ -12,6 +12,7 @@ mulang: var/out.3.sh
 	cp var/out.3.sh mulang
 
 var/out.0.sh: ./etc/mulang-last
+	mkdir -p var
 	cp ./etc/mulang-last var/out.0.sh
 
 var/out.1.sh: FORCE var/out.0.sh
