@@ -11,17 +11,20 @@ test: FORCE mulang
 mulang: var/out.3.sh
 	cp var/out.3.sh mulang
 
-var/out.1.sh: FORCE
-	./etc/mulang-last
-	mv var/out.sh var/out.1.sh
+var/out.0.sh: ./etc/mulang-last
+	cp ./etc/mulang-last var/out.0.sh
+
+var/out.1.sh: FORCE var/out.0.sh
+	./var/out.0.sh
+	if [ ! -e $@ ] || ! cmp -s var/out.sh $@; then mv var/out.sh $@; fi
 
 var/out.2.sh: var/out.1.sh
 	./var/out.1.sh
-	mv var/out.sh var/out.2.sh
+	if [ ! -e $@ ] || ! cmp -s var/out.sh $@; then mv var/out.sh $@; fi
 
 var/out.3.sh: var/out.2.sh
 	./var/out.2.sh
-	mv var/out.sh var/out.3.sh
+	if [ ! -e $@ ] || ! cmp -s var/out.sh $@; then mv var/out.sh $@; fi
 
 FORCE:
 
