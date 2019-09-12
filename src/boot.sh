@@ -27,6 +27,8 @@ if [ ! -e $MULANG_SOURCE_DIR ]; then
     exit 1;
 fi
 
+#working_dir
+
 bash $MULANG_SOURCE_DIR/main.sh "$@"
 
 exit $?
