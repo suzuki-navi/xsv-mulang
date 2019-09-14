@@ -34,12 +34,6 @@ if [ ! -e var ]; then
     echo "*" > var/.gitignore
 fi
 
-if [ -e var/last_mode ]; then
-    if [ "$(cat var/last_mode)" != "$development_mode" ]; then
-        rm var/last_mode
-    fi
-fi
-
 mkdir -p var/target
 
 ########################################
@@ -78,13 +72,25 @@ target_bin_2=$(echo $(for f in $target_bin_1; do echo $f; done | sed 's#^#var/ta
 
 (
 
+    if [ -z "$development_mode" ]; then
+        cat <<EOF
+build: var/out.sh
+
+EOF
+    else
+        cat <<EOF
+build: var/out-devel.sh
+
+EOF
+    fi
+
     if [ -n "$use_soft_working_dir" -o -n "$use_hard_working_dir" ]; then
-        if [ -n "$development_mode" ]; then
-            # 開発時用ビルド
-            # シングルバイナリにはしない
-            pwd=$(pwd)
-            cat <<EOF
-var/out.sh: var/TARGET_VERSION_HASH var/last_mode
+
+        # 開発時用ビルド
+        # シングルバイナリにはしない
+        pwd=$(pwd)
+        cat <<EOF
+var/out-devel.sh: var/TARGET_VERSION_HASH
 	echo "#!/bin/bash" > var/out.sh.tmp
 	echo ". var/target/.working-dir.sh" >> var/out.sh.tmp
 	echo "MULANG_SOURCE_DIR=$pwd/var/target bash $pwd/var/target/main.sh \"\\\$\$@\"" >> var/out.sh.tmp
@@ -92,10 +98,10 @@ var/out.sh: var/TARGET_VERSION_HASH var/last_mode
 	mv var/out.sh.tmp var/out.sh
 
 EOF
-        else
-            # リリース版用ビルド
-            cat <<EOF
-var/out.sh: var/TARGET_VERSION_HASH var/last_mode
+
+        # リリース版用ビルド
+        cat <<EOF
+var/out.sh: var/TARGET_VERSION_HASH
 	cat $MULANG_SOURCE_DIR/boot.sh | sed "s/XXXX_VERSION_HASH_XXXX/\$\$(cat var/TARGET_VERSION_HASH)/g" | sed "s#XXXX_MULANG_SOURCE_DIR_XXXX#$MULANG_SOURCE_PARENT_DIR_NAME#g" | sed 's#^\\#working_dir\$\$#. \$\$MULANG_SOURCE_DIR/.working-dir.sh#g' > var/out.sh.tmp
 	(cd var/target; perl $MULANG_SOURCE_DIR/pack-dir.pl) > var/image.sh
 	(cd var/target; perl $MULANG_SOURCE_DIR/pack-dir.pl) | gzip -n -c >> var/out.sh.tmp
@@ -103,23 +109,23 @@ var/out.sh: var/TARGET_VERSION_HASH var/last_mode
 	mv var/out.sh.tmp var/out.sh
 
 EOF
-        fi
+
     else
-        if [ -n "$development_mode" ]; then
-            # 開発時用ビルド
-            # シングルバイナリにはしない
-            pwd=$(pwd)
-            cat <<EOF
-var/out.sh: var/TARGET_VERSION_HASH var/last_mode
+
+        # 開発時用ビルド
+        # シングルバイナリにはしない
+        pwd=$(pwd)
+        cat <<EOF
+var/out-devel.sh: var/TARGET_VERSION_HASH
 	echo "MULANG_SOURCE_DIR=$pwd/var/target bash $pwd/var/target/main.sh \"\\\$\$@\"" > var/out.sh.tmp
 	chmod 755 var/out.sh.tmp
 	mv var/out.sh.tmp var/out.sh
 
 EOF
-        else
-            # リリース版用ビルド
-            cat <<EOF
-var/out.sh: var/TARGET_VERSION_HASH var/last_mode
+
+        # リリース版用ビルド
+        cat <<EOF
+var/out.sh: var/TARGET_VERSION_HASH
 	cat $MULANG_SOURCE_DIR/boot.sh | sed "s/XXXX_VERSION_HASH_XXXX/\$\$(cat var/TARGET_VERSION_HASH)/g" | sed "s#XXXX_MULANG_SOURCE_DIR_XXXX#$MULANG_SOURCE_PARENT_DIR_NAME#g" > var/out.sh.tmp
 	(cd var/target; perl $MULANG_SOURCE_DIR/pack-dir.pl) > var/image.sh
 	(cd var/target; perl $MULANG_SOURCE_DIR/pack-dir.pl) | gzip -n -c >> var/out.sh.tmp
@@ -127,14 +133,11 @@ var/out.sh: var/TARGET_VERSION_HASH var/last_mode
 	mv var/out.sh.tmp var/out.sh
 
 EOF
-        fi
+
     fi
 
     cat <<EOF
 FORCE:
-
-var/last_mode:
-	echo "$development_mode" > var/last_mode
 
 EOF
 
