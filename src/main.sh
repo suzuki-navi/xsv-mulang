@@ -53,11 +53,11 @@ fi
 
 use_soft_working_dir=
 use_hard_working_dir=
-if grep "MULANG_SOFT_WORKING_DIR" src/main.sh; then
+if grep "MULANG_SOFT_WORKING_DIR" src/main.sh >/dev/null; then
     # `MULANG_SOFT_WORKING_DIR` という文字列が src/main.sh に含まれる場合
     use_soft_working_dir=1
 fi
-if grep "MULANG_HARD_WORKING_DIR" src/main.sh; then
+if grep "MULANG_HARD_WORKING_DIR" src/main.sh >/dev/null; then
     # `MULANG_HARD_WORKING_DIR` という文字列が src/main.sh に含まれる場合
     use_hard_working_dir=1
 fi
@@ -84,7 +84,7 @@ target_bin_2=$(echo $(for f in $target_bin_1; do echo $f; done | sed 's#^#var/ta
             # シングルバイナリにはしない
             pwd=$(pwd)
             cat <<EOF
-var/out.sh: var/TARGET_VERSION_HASH var/last_mode var/target/.working-dir.sh
+var/out.sh: var/TARGET_VERSION_HASH var/last_mode
 	echo "#!/bin/bash" > var/out.sh.tmp
 	echo ". var/target/.working-dir.sh" >> var/out.sh.tmp
 	echo "MULANG_SOURCE_DIR=$pwd/var/target bash $pwd/var/target/main.sh \"\\\$\$@\"" >> var/out.sh.tmp
@@ -95,7 +95,7 @@ EOF
         else
             # リリース版用ビルド
             cat <<EOF
-var/out.sh: var/TARGET_VERSION_HASH var/last_mode var/target/.working-dir.sh
+var/out.sh: var/TARGET_VERSION_HASH var/last_mode
 	cat $MULANG_SOURCE_DIR/boot.sh | sed "s/XXXX_VERSION_HASH_XXXX/\$\$(cat var/TARGET_VERSION_HASH)/g" | sed "s#XXXX_MULANG_SOURCE_DIR_XXXX#$MULANG_SOURCE_PARENT_DIR_NAME#g" | sed 's#^\\#working_dir\$\$#. \$\$MULANG_SOURCE_DIR/.working-dir.sh#g' > var/out.sh.tmp
 	(cd var/target; perl $MULANG_SOURCE_DIR/pack-dir.pl) > var/image.sh
 	(cd var/target; perl $MULANG_SOURCE_DIR/pack-dir.pl) | gzip -n -c >> var/out.sh.tmp
@@ -152,8 +152,12 @@ EOF
 
     dotfiles=".anylang"
     if [ -n "$use_soft_working_dir" -o -n "$use_hard_working_dir" ]; then
-        dotfiles="$dotfiles .working-dir.sh"
+        dotfiles+=" .working-dir.sh"
     fi
+    dotfiles_target=
+    for f in $dotfiles; do
+        dotfiles_target+=" var/target/$f"
+    done
 
     # var/target にある不要なファイルを削除
     # ソースコードが減った場合、リネームされた場合に備えた処理
@@ -202,7 +206,7 @@ var/target/.dir:
 	mkdir -p var/target
 	touch var/target/.dir
 
-var/TARGET_VERSION_HASH: $target_sources_2 $target_bin_2 var/target/.anylang $rm_targets_flag
+var/TARGET_VERSION_HASH: $target_sources_2 $target_bin_2 $dotfiles_target $rm_targets_flag
 	(find var/target -type f | LC_ALL=C sort; cat \$\$(find var/target -type f | LC_ALL=C sort)) | shasum | cut -b1-40 > \$@.tmp
 	if [ ! -e \$@ ] || ! cmp -s \$@.tmp \$@; then mv \$@.tmp \$@; fi
 
