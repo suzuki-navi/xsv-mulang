@@ -76,6 +76,8 @@ if ($type1 eq "sbt-package" || $type1 eq "sbt-fatjar") {
     }
     closedir($dh);
 
+    die "any source files not found" unless @scalaSources;
+
     # var/target にある不要なファイルを削除
     # ソースコードが減った場合、リネームされた場合に備えた処理
     my $rm_targets = ".dir " . join(" ", @scalaSources);
