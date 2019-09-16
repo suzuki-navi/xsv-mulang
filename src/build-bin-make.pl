@@ -37,8 +37,6 @@ if (!defined($type1)) {
     die "src/$name.mulang.conf: type not found";
 }
 
-
-
 if ($type1 eq "sbt-package" || $type1 eq "sbt-fatjar") {
 
     if (!defined($jdk_version)) {
@@ -51,10 +49,8 @@ if ($type1 eq "sbt-package" || $type1 eq "sbt-fatjar") {
         die "src/$name.mulang.conf: graalvm-version not found";
     }
 
-    if ($ENV{MULANG_DEVELOPMENT_MODE} eq "1") {
-        $type1 = "sbt-fatjar";
-        $type2 = "sbt-fatjar";
-    }
+    my $type1_devel = "sbt-devel";
+    my $type2_devel = "sbt-devel";
 
     my @scalaSources = ();
     opendir(my $dh, "src") or die $!;
@@ -81,63 +77,72 @@ if ($type1 eq "sbt-package" || $type1 eq "sbt-fatjar") {
     # var/target にある不要なファイルを削除
     # ソースコードが減った場合、リネームされた場合に備えた処理
     my $rm_targets = ".dir " . join(" ", @scalaSources);
-    my $rm_targets_flag = "";
-    if ( -d "var/build-$name/sbt/src/main/java" ) {
-        system("cd var/build-$name/sbt/src/main/java; bash $ENV{MULANG_SOURCE_DIR}/rm-targets.sh $rm_targets");
+    my $rm_targets_single_flag = "";
+    my $rm_targets_devel_flag = "";
+    if ( -d "var/build-$name-single/sbt/src/main/java" ) {
+        system("cd var/build-$name-single/sbt/src/main/java; bash $ENV{MULANG_SOURCE_DIR}/rm-targets.sh $rm_targets");
         if ($? != 0) {
-            $rm_targets_flag = "FORCE";
+            $rm_targets_single_flag = "FORCE";
+        }
+    }
+    if ( -d "var/build-$name-devel/sbt/src/main/java" ) {
+        system("cd var/build-$name-devel/sbt/src/main/java; bash $ENV{MULANG_SOURCE_DIR}/rm-targets.sh $rm_targets");
+        if ($? != 0) {
+            $rm_targets_devel_flag = "FORCE";
         }
     }
 
-    my $scalaSources2 = "";
+    my $scalaSources_single = "";
+    my $scalaSources_devel = "";
     foreach my $s (@scalaSources) {
-        $scalaSources2 .= " var/build-$name/sbt/src/main/java/$s";
+        $scalaSources_single .= " var/build-$name-single/sbt/src/main/java/$s";
+        $scalaSources_devel .= " var/build-$name-devel/sbt/src/main/java/$s";
     }
 
     if ($type1 eq "sbt-package") {
         print <<EOS;
-var/target/$name: var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
-	rm -rf var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT 2>/dev/null
-	cd var/build-$name/sbt/target/universal; unzip $name-0.1.0-SNAPSHOT.zip
-	rm -rf var/target/.$name-bin
-	mv var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT var/target/.$name-bin
-	echo '#!/bin/bash' > var/target/$name.tmp
-	echo '\$\$MULANG_SOURCE_DIR/.anylang --jdk=$jdk_version \$\$MULANG_SOURCE_DIR/.$name-bin/bin/$name "\$\$@"' >> var/target/$name.tmp
-	chmod +x var/target/$name.tmp
-	mv var/target/$name.tmp var/target/$name
+var/target-single/$name: var/build-$name-single/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
+	rm -rf var/build-$name-single/sbt/target/universal/$name-0.1.0-SNAPSHOT 2>/dev/null
+	cd var/build-$name-single/sbt/target/universal; unzip $name-0.1.0-SNAPSHOT.zip
+	rm -rf var/target-single/.$name-bin
+	mv var/build-$name-single/sbt/target/universal/$name-0.1.0-SNAPSHOT var/target-single/.$name-bin
+	echo '#!/bin/bash' > var/target-single/$name.tmp
+	echo '\$\$MULANG_SOURCE_DIR/.anylang --jdk=$jdk_version \$\$MULANG_SOURCE_DIR/.$name-bin/bin/$name "\$\$@"' >> var/target-single/$name.tmp
+	chmod +x var/target-single/$name.tmp
+	mv var/target-single/$name.tmp var/target-single/$name
 
-var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip: var/build-$name/sbt/build.sbt var/build-$name/sbt/project/plugins.sbt $scalaSources2 var/target/.anylang $rm_targets_flag
-	cd var/build-$name/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt universal:packageBin
-	touch var/build-$name/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
+var/build-$name-single/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip: var/build-$name-single/sbt/build.sbt var/build-$name-single/sbt/project/plugins.sbt $scalaSources_single var/target-single/.anylang $rm_targets_single_flag
+	cd var/build-$name-single/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt universal:packageBin
+	touch var/build-$name-single/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
 
 EOS
     } elsif ($type1 eq "sbt-fatjar") {
         if ($type2 eq "sbt-nativeimage") {
             print <<EOS;
-var/target/$name: var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
-	rm -rf var/target/.$name-bin
-	cd var/build-$name; $ENV{MULANG_SOURCE_DIR}/.anylang --graalvm=$graalvm_version native-image -jar sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar --verbose
-	mv var/build-$name/$name-assembly-0.1.0-SNAPSHOT var/target/$name
+var/target-single/$name: var/build-$name-single/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
+	rm -rf var/target-single/.$name-bin
+	cd var/build-$name-single; $ENV{MULANG_SOURCE_DIR}/.anylang --graalvm=$graalvm_version native-image -jar sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar --verbose
+	mv var/build-$name-single/$name-assembly-0.1.0-SNAPSHOT var/target-single/$name
 
 EOS
         } else {
             print <<EOS;
-var/target/$name: var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
-	rm -rf var/target/.$name-bin
-	mkdir -p var/target/.$name-bin
-	cp var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar var/target/.$name-bin/$name.jar
-	echo '#!/bin/bash' > var/target/$name.tmp
-	echo '\$\$MULANG_SOURCE_DIR/.anylang --jdk=$jdk_version java -jar \$\$MULANG_SOURCE_DIR/.$name-bin/$name.jar "\$\$@"' >> var/target/$name.tmp
-	chmod +x var/target/$name.tmp
-	mv var/target/$name.tmp var/target/$name
+var/target-single/$name: var/build-$name-single/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
+	rm -rf var/target-single/.$name-bin
+	mkdir -p var/target-single/.$name-bin
+	cp var/build-$name-single/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar var/target-single/.$name-bin/$name.jar
+	echo '#!/bin/bash' > var/target-single/$name.tmp
+	echo '\$\$MULANG_SOURCE_DIR/.anylang --jdk=$jdk_version java -jar \$\$MULANG_SOURCE_DIR/.$name-bin/$name.jar "\$\$@"' >> var/target-single/$name.tmp
+	chmod +x var/target-single/$name.tmp
+	mv var/target-single/$name.tmp var/target-single/$name
 
 EOS
         }
 
         print <<EOS;
-var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar: var/build-$name/sbt/build.sbt var/build-$name/sbt/project/plugins.sbt $scalaSources2 var/target/.anylang $rm_targets_flag
-	cd var/build-$name/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt assembly
-	touch var/build-$name/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
+var/build-$name-single/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar: var/build-$name-single/sbt/build.sbt var/build-$name-single/sbt/project/plugins.sbt $scalaSources_single var/target-single/.anylang $rm_targets_single_flag
+	cd var/build-$name-single/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt assembly
+	touch var/build-$name-single/sbt/target/scala-2.12/$name-assembly-0.1.0-SNAPSHOT.jar
 
 EOS
     } else {
@@ -145,27 +150,71 @@ EOS
     }
 
     print <<EOS;
-var/build-$name/sbt/build.sbt: var/last_mode
-	mkdir -p var/build-$name/sbt
-	perl $ENV{MULANG_SOURCE_DIR}/build-$type1-build.pl $name > var/build-$name/sbt/build.sbt
+var/target-devel/$name: var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
+	rm -rf var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT 2>/dev/null
+	cd var/build-$name-devel/sbt/target/universal; unzip $name-0.1.0-SNAPSHOT.zip
+	rm -rf var/target-devel/.$name-bin
+	mv var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT var/target-devel/.$name-bin
+	echo '#!/bin/bash' > var/target-devel/$name.tmp
+	echo '\$\$MULANG_SOURCE_DIR/.anylang --jdk=$jdk_version \$\$MULANG_SOURCE_DIR/.$name-bin/bin/$name "\$\$@"' >> var/target-devel/$name.tmp
+	chmod +x var/target-devel/$name.tmp
+	mv var/target-devel/$name.tmp var/target-devel/$name
 
-var/build-$name/sbt/project/plugins.sbt: var/last_mode
-	mkdir -p var/build-$name/sbt/project
-	perl $ENV{MULANG_SOURCE_DIR}/build-$type1-plugins.pl $name > var/build-$name/sbt/project/plugins.sbt
+var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip: var/build-$name-devel/sbt/build.sbt var/build-$name-devel/sbt/project/plugins.sbt $scalaSources_devel var/target-devel/.anylang $rm_targets_devel_flag
+	cd var/build-$name-devel/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt universal:packageBin
+	touch var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
+
+EOS
+
+
+    print <<EOS;
+var/build-$name-single/sbt/build.sbt:
+	mkdir -p var/build-$name-single/sbt
+	perl $ENV{MULANG_SOURCE_DIR}/build-$type1-build.pl $name > var/build-$name-single/sbt/build.sbt
+
+var/build-$name-single/sbt/project/plugins.sbt:
+	mkdir -p var/build-$name-single/sbt/project
+	perl $ENV{MULANG_SOURCE_DIR}/build-$type1-plugins.pl $name > var/build-$name-single/sbt/project/plugins.sbt
 
 EOS
 
     print <<EOS;
-var/build-$name/sbt/src/main/java/.dir:
-	mkdir -p var/build-$name/sbt/src/main/java
-	touch var/build-$name/sbt/src/main/java/.dir
+var/build-$name-devel/sbt/build.sbt:
+	mkdir -p var/build-$name-devel/sbt
+	perl $ENV{MULANG_SOURCE_DIR}/build-$type1_devel-build.pl $name > var/build-$name-devel/sbt/build.sbt
+
+var/build-$name-devel/sbt/project/plugins.sbt:
+	mkdir -p var/build-$name-devel/sbt/project
+	perl $ENV{MULANG_SOURCE_DIR}/build-$type1_devel-plugins.pl $name > var/build-$name-devel/sbt/project/plugins.sbt
+
+EOS
+
+    print <<EOS;
+var/build-$name-single/sbt/src/main/java/.dir:
+	mkdir -p var/build-$name-single/sbt/src/main/java
+	touch var/build-$name-single/sbt/src/main/java/.dir
+
+EOS
+
+    print <<EOS;
+var/build-$name-devel/sbt/src/main/java/.dir:
+	mkdir -p var/build-$name-devel/sbt/src/main/java
+	touch var/build-$name-devel/sbt/src/main/java/.dir
 
 EOS
 
     foreach my $s (@scalaSources) {
         print <<EOS;
-var/build-$name/sbt/src/main/java/$s: src/$s var/build-$name/sbt/src/main/java/.dir
-	cp src/$s var/build-$name/sbt/src/main/java/$s
+var/build-$name-single/sbt/src/main/java/$s: src/$s var/build-$name-single/sbt/src/main/java/.dir
+	cp src/$s var/build-$name-single/sbt/src/main/java/$s
+
+EOS
+    }
+
+    foreach my $s (@scalaSources) {
+        print <<EOS;
+var/build-$name-devel/sbt/src/main/java/$s: src/$s var/build-$name-devel/sbt/src/main/java/.dir
+	cp src/$s var/build-$name-devel/sbt/src/main/java/$s
 
 EOS
     }
