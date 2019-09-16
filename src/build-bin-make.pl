@@ -151,18 +151,16 @@ EOS
 
     print <<EOS;
 var/target-devel/$name: var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
-	rm -rf var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT 2>/dev/null
-	cd var/build-$name-devel/sbt/target/universal; unzip $name-0.1.0-SNAPSHOT.zip
 	rm -rf var/target-devel/.$name-bin
-	mv var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT var/target-devel/.$name-bin
+	ln -s ../../var/build-$name-devel/sbt/target/universal/stage var/target-devel/.$name-bin
 	echo '#!/bin/bash' > var/target-devel/$name.tmp
 	echo '\$\$MULANG_SOURCE_DIR/.anylang --jdk=$jdk_version \$\$MULANG_SOURCE_DIR/.$name-bin/bin/$name "\$\$@"' >> var/target-devel/$name.tmp
 	chmod +x var/target-devel/$name.tmp
 	mv var/target-devel/$name.tmp var/target-devel/$name
 
 var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip: var/build-$name-devel/sbt/build.sbt var/build-$name-devel/sbt/project/plugins.sbt $scalaSources_devel var/target-devel/.anylang $rm_targets_devel_flag
-	cd var/build-$name-devel/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt universal:packageBin
-	touch var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
+	cd var/build-$name-devel/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt stage
+	touch var/build-$name-devel/sbt/target/universal/stage/bin/$name
 
 EOS
 

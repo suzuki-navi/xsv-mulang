@@ -27,6 +27,7 @@ version := "0.1.0-SNAPSHOT"
 
 scalaVersion := "$scalaVersion"
 enablePlugins(JavaAppPackaging)
+mappings in (Compile, packageDoc) := Seq()
 
 resolvers += "Restlet Repository" at "http://maven.restlet.org"
 
