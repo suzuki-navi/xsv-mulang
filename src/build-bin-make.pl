@@ -72,7 +72,7 @@ if ($type1 eq "sbt-package" || $type1 eq "sbt-fatjar") {
     }
     closedir($dh);
 
-    die "any source files not found" unless @scalaSources;
+    die "any source files not found ($name $sources)" unless @scalaSources;
 
     # var/target にある不要なファイルを削除
     # ソースコードが減った場合、リネームされた場合に備えた処理
@@ -150,7 +150,7 @@ EOS
     }
 
     print <<EOS;
-var/target-devel/$name: var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip
+var/target-devel/$name: var/build-$name-devel/sbt/target/universal/stage/bin/$name
 	rm -rf var/target-devel/.$name-bin
 	ln -s ../../var/build-$name-devel/sbt/target/universal/stage var/target-devel/.$name-bin
 	echo '#!/bin/bash' > var/target-devel/$name.tmp
@@ -158,7 +158,7 @@ var/target-devel/$name: var/build-$name-devel/sbt/target/universal/$name-0.1.0-S
 	chmod +x var/target-devel/$name.tmp
 	mv var/target-devel/$name.tmp var/target-devel/$name
 
-var/build-$name-devel/sbt/target/universal/$name-0.1.0-SNAPSHOT.zip: var/build-$name-devel/sbt/build.sbt var/build-$name-devel/sbt/project/plugins.sbt $scalaSources_devel var/target-devel/.anylang $rm_targets_devel_flag
+var/build-$name-devel/sbt/target/universal/stage/bin/$name: var/build-$name-devel/sbt/build.sbt var/build-$name-devel/sbt/project/plugins.sbt $scalaSources_devel var/target-devel/.anylang $rm_targets_devel_flag
 	cd var/build-$name-devel/sbt; $ENV{MULANG_SOURCE_DIR}/.anylang --sbt=$sbt_version --jdk=$jdk_version sbt stage
 	touch var/build-$name-devel/sbt/target/universal/stage/bin/$name
 
